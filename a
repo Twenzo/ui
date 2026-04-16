@@ -1,0 +1,166 @@
+--// Services
+local TweenService     = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Players          = game:GetService("Players")
+local RunService       = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui   = LocalPlayer:WaitForChild("PlayerGui")
+
+--// Container
+local function getContainer()
+    local ok, result = pcall(function()
+        return game:GetService("CoreGui")
+    end)
+    return ok and result or PlayerGui
+end
+local Container = getContainer()
+
+--// Device check
+local IsMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+local ScreenSize = workspace.CurrentCamera.ViewportSize
+local ScreenH    = ScreenSize.Y
+local ScreenW    = ScreenSize.X
+
+local TopInset   = game:GetService("GuiService"):GetGuiInset().Y
+local SafeTop    = IsMobile and math.max(TopInset, 30) or 0
+
+--// CONFIG
+local CONFIG = {
+    Title      = "vibecoded.xyz",
+    SubTitle   = "v4.0",
+    ToggleKey  = Enum.KeyCode.RightShift,
+
+    Accent     = Color3.fromRGB(0, 255, 200),
+    Accent2    = Color3.fromRGB(180, 180, 180), -- grey instead of blue
+
+    Warn       = Color3.fromRGB(255, 185, 0),
+    Danger     = Color3.fromRGB(255, 60, 90),
+
+    BgMain     = Color3.fromRGB(6, 9, 16),
+    BgPanel    = Color3.fromRGB(10, 14, 26),
+    BgSidebar  = Color3.fromRGB(8, 11, 20),
+    BgCard     = Color3.fromRGB(13, 18, 32),
+
+    Text       = Color3.fromRGB(200, 215, 235),
+    TextDim    = Color3.fromRGB(80, 110, 140),
+
+    Width      = IsMobile and math.min(ScreenW - 20, 380) or 700,
+    Height     = IsMobile and math.min(ScreenH - SafeTop - 20, 480) or 460,
+    SidebarW   = IsMobile and 0 or 155,
+    RowH       = IsMobile and 50 or 40,
+    FontSize   = IsMobile and 14 or 12,
+}
+
+--// Utils
+local function tw(obj, props, t, style, dir)
+    if not obj or not obj.Parent then return end
+    TweenService:Create(
+        obj,
+        TweenInfo.new(t or 0.25, style or Enum.EasingStyle.Quart, dir or Enum.EasingDirection.Out),
+        props
+    ):Play()
+end
+
+local function corner(p, r)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, r or 6)
+    c.Parent = p
+    return c
+end
+
+local function stroke(p, color, thick, trans)
+    local s = Instance.new("UIStroke")
+    s.Color = color or CONFIG.Accent
+    s.Thickness = thick or 1
+    s.Transparency = trans or 0.7
+    s.Parent = p
+    return s
+end
+
+--// GUI Cleanup
+if Container:FindFirstChild("vibecodedGui") then
+    Container.vibecodedGui:Destroy()
+end
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "vibecodedGui"
+Gui.ResetOnSpawn = false
+Gui.IgnoreGuiInset = true
+Gui.DisplayOrder = 999
+Gui.Parent = Container
+
+--// Main Window
+local Win = Instance.new("Frame")
+Win.Size = UDim2.new(0, CONFIG.Width, 0, CONFIG.Height)
+Win.Position = UDim2.new(0.5, -CONFIG.Width/2, 0.5, -CONFIG.Height/2)
+Win.BackgroundColor3 = CONFIG.BgPanel
+Win.Parent = Gui
+corner(Win, 8)
+
+local WinStroke = stroke(Win, CONFIG.Accent, 1, 0.7)
+
+--// Header
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 40)
+Header.BackgroundColor3 = CONFIG.BgSidebar
+Header.Parent = Win
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 1, 0)
+Title.Text = CONFIG.Title .. " | " .. CONFIG.SubTitle
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.TextColor3 = CONFIG.Accent
+Title.BackgroundTransparency = 1
+Title.Parent = Header
+
+--// Toggle Button
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Size = UDim2.new(0, 35, 0, 35)
+OpenBtn.Position = UDim2.new(0, 10, 0.5, -17)
+OpenBtn.Text = "⬡"
+OpenBtn.Font = Enum.Font.GothamBold
+OpenBtn.TextColor3 = CONFIG.Accent
+OpenBtn.BackgroundColor3 = CONFIG.BgPanel
+OpenBtn.Parent = Gui
+corner(OpenBtn, 6)
+
+--// Toggle Logic
+local isOpen = true
+
+local function openUI()
+    Win.Visible = true
+    OpenBtn.Visible = false
+end
+
+local function closeUI()
+    Win.Visible = false
+    OpenBtn.Visible = true
+end
+
+OpenBtn.MouseButton1Click:Connect(openUI)
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == CONFIG.ToggleKey then
+        if isOpen then
+            closeUI()
+        else
+            openUI()
+        end
+        isOpen = not isOpen
+    end
+end)
+
+openUI()
+
+--// Return API
+local vibecoded = {}
+
+function vibecoded.Notify(msg)
+    print("[vibecoded.xyz]:", msg)
+end
+
+return vibecoded
